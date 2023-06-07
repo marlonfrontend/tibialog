@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { formatterLog } from '../utils'
+import { formatLog } from '../utils'
 
 import { type TibiaLogProps } from '../types'
 
@@ -23,7 +23,8 @@ const openFile = (file: any) => {
   reader.onload = () => {
     const text = reader.result as any
     const res = text.split(/\r?\n/)
-    formatterLog(res, outputData)
+    console.log(res)
+    outputData.value = formatLog(res)
   }
 }
 </script>

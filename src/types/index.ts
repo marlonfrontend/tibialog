@@ -1,11 +1,11 @@
 export interface DamageTakenProps {
   total: number
-  byCreatureKind: any
+  byCreatureKind: Record<string, number>
 }
 
 export interface TibiaLogProps {
   hitpointsHealed: number
   damageTaken: DamageTakenProps
   experienceGained: number
-  loot: any
+  loot: Record<string, number>
 }

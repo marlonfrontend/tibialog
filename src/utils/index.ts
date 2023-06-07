@@ -1,44 +1,88 @@
-export const formatterLog = (value: any, outputData: any) => {
-  value.map((line: any) => {
-    line = line.substring(5)
+const calculateHealedYourself = (value: string[]) =>
+  value
+    .filter((line) => line.includes('healed yourself'))
+    .reduce((total, line) => total + parseInt(line.substring(24).replace(' hitpoints.', '')), 0)
 
-    if (line.includes('healed yourself')) {
-      outputData.value.hitpointsHealed += parseInt(line.substring(24).replace(' hitpoints.', ''))
-    } else if (line.includes('You lose')) {
-      const valueTaken = parseInt(line.replace(/\D/g, ''))
-      outputData.value.damageTaken.total += valueTaken
+const getCreatureName = (line: string) => {
+  const words = line.split(' ').filter(Boolean)
+  const creatureKind = words[words.length - 1].replace('.', '')
 
-      if (line.includes('by')) {
-        const words = line.split(' ').filter(Boolean)
-        const creatureKind = words[words.length - 1].replace('.', '')
+  return creatureKind
+}
 
-        if (outputData.value.damageTaken.byCreatureKind[creatureKind] == undefined) {
-          outputData.value.damageTaken.byCreatureKind[creatureKind] = 0
+const calculateYouLose = (value: string[]) =>
+  value
+    .filter((line) => line.includes('You lose'))
+    .reduce(
+      (result, line) => {
+        const valueTaken = parseInt(line.replace(/\D/g, ''))
+
+        const total = result.total + valueTaken
+
+        const creatureName = line.includes('by') && getCreatureName(line)
+
+        const byCreatureKind = creatureName
+          ? {
+              ...(result?.byCreatureKind ?? {}),
+              [creatureName]: valueTaken
+            }
+          : result.byCreatureKind
+
+        return {
+          total,
+          byCreatureKind
         }
-        outputData.value.damageTaken.byCreatureKind[creatureKind] += valueTaken
-      }
-    } else if (line.includes('You gained')) {
-      outputData.value.experienceGained += parseInt(line.replace(/\D/g, ''))
-    } else if (line.includes('Loot of')) {
-      const words = line.split(':').filter(Boolean)
-      const listLoot = words[words.length - 1].replace('.', '').split(',')
+      },
+      { total: 0, byCreatureKind: {} }
+    )
 
-      listLoot.filter((item: any) => {
-        let name = item.replace(/\d+/g, '').replace('a ', '').trim()
-        if (name == 'nothing') {
-          return
-        } else if (name == 'gold coin' || name == 'gold coins') {
-          name = 'gold'
-        }
-        const quantity = isNaN(parseInt(item.replace(/\D/g, '')))
-          ? 1
-          : parseInt(item.replace(/\D/g, ''))
+const calculateYouGained = (value: string[]) =>
+  value
+    .filter((line) => line.includes('You gained'))
+    .reduce((total, line) => total + parseInt(line.replace(/\D/g, '')), 0)
 
-        if (outputData.value.loot[name] == undefined) {
-          outputData.value.loot[name] = 0
-        }
-        outputData.value.loot[name] += quantity
+const calculateLoot = (value: string[]) => {
+  return Object.fromEntries(
+    value
+      .filter((line) => line.includes('Loot of'))
+      .map((line) => {
+        const words = line.split(':').filter(Boolean)
+        const lootList = words[words.length - 1].replace('.', '').split(',')
+
+        return lootList
+          .map((loot) => {
+            const name = loot.replace(/\d+/g, '').replace('a ', '').trim()
+            return {
+              loot,
+              name
+            }
+          })
+          .filter((loot) => !loot.name.includes('nothing'))
+          .map((item) => {
+            const name =
+              item.name === 'gold coin' || item.name === 'gold coins' ? 'gold' : item.name
+            const quantity = isNaN(parseInt(item.loot.replace(/\D/g, '')))
+              ? 1
+              : parseInt(item.loot.replace(/\D/g, ''))
+
+            return [name, quantity]
+          })
       })
-    }
-  })
+      .flat()
+  ) as Record<string, number>
+}
+
+export const formatLog = (value: string[]) => {
+  value = value.map((line) => line.substring(5))
+  const hitpointsHealed = calculateHealedYourself(value)
+  const damageTaken = calculateYouLose(value)
+  const experienceGained = calculateYouGained(value)
+  const loot = calculateLoot(value)
+
+  return {
+    hitpointsHealed,
+    damageTaken,
+    experienceGained,
+    loot
+  }
 }
