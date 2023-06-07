@@ -20,13 +20,6 @@ module.exports = {
     boxShadow: {
       DEFAULT: '0 1px 5px rgba(0,0,0,0.06)',
       md: '2px 2px 8px rgba(0,0,0,0.06)',
-    },
-    fontSize: {
-      base: '16px',
-      lg: '22px',
-      xl: '28px',
-      '2xl': '34px',
-      '3xl': '55px',
     }
   },
   plugins: [],
